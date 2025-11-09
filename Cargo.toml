@@ -1,0 +1,38 @@
+[package]
+name = "pgmoneta-mcp"
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+
+[[bin]]
+name = "pgmoneta-mcp-server"
+path = "src/server.rs"
+
+[[bin]]
+name = "pgmoneta-mcp-amdin"
+path = "src/admin.rs"
+
+[dependencies]
+tokio = {version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+rmcp = { version = "0.8", features = [
+    "server",
+    "macros",
+    "client",
+    "transport-sse-server",
+    "transport-io",
+    "transport-streamable-http-server",
+    "auth",
+    "elicitation",
+    "schemars",
+] }
+anyhow = "1.0"
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "std",
+    "fmt",
+] }
+axum = { version = "0.8", features = ["macros"] }
+config = { version = "0.15", features = ["yaml"] }
