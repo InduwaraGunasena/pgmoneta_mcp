@@ -12,9 +12,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::{Parser, Subcommand};
 use pgmoneta_mcp::constant::*;
+use pgmoneta_mcp::security::SecurityUtil;
+use pgmoneta_mcp::configuration;
+use configuration::UserConf;
+use std::path::Path;
+use std::fs;
+use std::collections::HashMap;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -70,6 +76,31 @@ fn main() -> Result<()> {
 struct User;
 impl User {
     pub fn set_user(file: &str, user: &str, password: &str) -> Result<()> {
+        let path = Path::new(file);
+        let sutil = SecurityUtil::new();
+        let mut conf: UserConf;
+        let master_key = sutil.load_master_key().map_err(|e| {
+            anyhow!("Unable to load the master key, needed for adding user: {:?}", e)
+        })?;
+        let password_str = sutil.encrypt_to_base64_string(password.as_bytes(), &master_key[..])?;
+
+        if !path.exists() || path.is_dir() {
+            conf = HashMap::new();
+            let mut user_conf: HashMap<String, String> = HashMap::new();
+            user_conf.insert(user.to_string(), password_str);
+            conf.insert("admins".to_string(), user_conf);
+        } else {
+            conf = configuration::load_user_configuration(file)?;
+            if let Some(user_conf) = conf.get_mut("admins") {
+                user_conf.insert(user.to_string(), password_str);
+            } else {
+                return Err(anyhow!("Unable to find admins in user configuration"))
+            }
+        }
+
+        let conf_str = toml::to_string(&conf)?;
+        fs::write(file, &conf_str)?;
+
         Ok(())
     }
 }

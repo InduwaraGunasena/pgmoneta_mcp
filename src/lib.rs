@@ -17,5 +17,5 @@ pub mod configuration;
 pub mod handler;
 pub mod constant;
 
-mod security;
+pub mod security;
 mod client;
