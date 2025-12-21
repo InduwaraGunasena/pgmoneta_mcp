@@ -50,14 +50,14 @@ async fn main() -> anyhow::Result<()> {
         .with_writer(std::io::stderr)
         .with_ansi(false)
         .init();
-    let info_service = StreamableHttpService::new(
+    let handler = StreamableHttpService::new(
         || Ok(PgmonetaHandler::new()),
         LocalSessionManager::default().into(),
         Default::default()
     );
     
     let router = axum::Router::new()
-        .nest_service("/mcp", info_service);
+        .nest_service("/mcp", handler);
     let tcp_listener = tokio::net::TcpListener::bind(&address).await?;
 
     println!("Starting pgmoneta MCP server at {address}");
