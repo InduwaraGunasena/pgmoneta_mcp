@@ -9,7 +9,7 @@ name = "pgmoneta-mcp-server"
 path = "src/bin/server.rs"
 
 [[bin]]
-name = "pgmoneta-mcp-amdin"
+name = "pgmoneta-mcp-admin"
 path = "src/bin/admin.rs"
 
 [dependencies]
