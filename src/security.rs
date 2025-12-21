@@ -89,8 +89,8 @@ impl SecurityUtil {
             return Err(anyhow!("Not enough bytes to decrypt the text"))
         }
         let nonce: &[u8] = &cipher_text_bytes[..NONCE_LEN];
-        let salt: &[u8] = &cipher_text_bytes[NONCE_LEN..SALT_LEN];
-        Self::decrypt_text(&cipher_text_bytes[..(NONCE_LEN + SALT_LEN)], master_key, nonce, salt)
+        let salt: &[u8] = &cipher_text_bytes[NONCE_LEN..NONCE_LEN+SALT_LEN];
+        Self::decrypt_text(&cipher_text_bytes[(NONCE_LEN + SALT_LEN)..], master_key, nonce, salt)
     }
 }
 
