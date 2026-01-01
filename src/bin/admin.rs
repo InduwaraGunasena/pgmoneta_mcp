@@ -58,12 +58,8 @@ enum UserAction {
 fn main() -> Result<()> {
     let args = Args::parse();
     match args.command {
-        Commands::User {
-            action,
-            user,
-            file,
-        } => match action {
-            UserAction::Add {password} => User::set_user(&file, &user, &password)?,
+        Commands::User { action, user, file } => match action {
+            UserAction::Add { password } => User::set_user(&file, &user, &password)?,
         },
         Commands::MasterKey => {
             MasterKey::set_master_key()?;

@@ -294,8 +294,7 @@ impl SecurityUtil {
         if auth_type != Self::AUTH_SASL_CONTINUE {
             return Err(anyhow!("Unexpected auth type {}", auth_type));
         }
-        let server_first_str =
-            String::from_utf8(Vec::from(&server_first[Self::HEADER_OFFSET..n]))?;
+        let server_first_str = String::from_utf8(Vec::from(&server_first[Self::HEADER_OFFSET..n]))?;
         let scram = scram.handle_server_first(&server_first_str)?;
 
         let (scram, client_final) = scram.client_final();
@@ -322,8 +321,7 @@ impl SecurityUtil {
         if auth_type != Self::AUTH_SASL_FINAL {
             return Err(anyhow!("Unexpected auth type {}", auth_type));
         }
-        let server_final_str =
-            String::from_utf8(Vec::from(&server_final[Self::HEADER_OFFSET..n]))?;
+        let server_final_str = String::from_utf8(Vec::from(&server_final[Self::HEADER_OFFSET..n]))?;
         scram.handle_server_final(&server_final_str)?;
 
         let auth_success = Self::read_message(&mut stream).await?;
@@ -340,7 +338,10 @@ impl SecurityUtil {
                 .map_err(|_| anyhow!("Invalid auth success auth_type"))?,
         );
         if auth_type != Self::AUTH_OK {
-            return Err(anyhow!("Authentication did not succeed (auth_type={})", auth_type));
+            return Err(anyhow!(
+                "Authentication did not succeed (auth_type={})",
+                auth_type
+            ));
         }
         Ok(stream)
     }
