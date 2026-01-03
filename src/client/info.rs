@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-use super::{PgmonetaClient, PgmonetaRequest};
+use super::PgmonetaClient;
 use crate::constant::Command;
 use serde::Serialize;
 
@@ -23,6 +23,14 @@ struct InfoRequest {
     server: String,
     #[serde(rename = "Backup")]
     backup: String,
+}
+
+#[derive(Serialize, Clone)]
+struct ListBackupsRequest {
+    #[serde(rename = "Server")]
+    server: String,
+    #[serde(rename = "Sort")]
+    sort: String,
 }
 
 impl PgmonetaClient {
@@ -35,15 +43,18 @@ impl PgmonetaClient {
             server: server.to_string(),
             backup: backup.to_string(),
         };
-        let mut stream = Self::connect_to_server(username).await?;
-        let header = Self::build_request_header(Command::INFO);
-        let request = PgmonetaRequest {
-            request: info_request,
-            header,
-        };
+        Self::forward_request(username, Command::INFO, info_request).await
+    }
 
-        let request_str = serde_json::to_string(&request)?;
-        Self::write_request(&request_str, &mut stream).await?;
-        Self::read_response(&mut stream).await
+    pub async fn request_list_backups(
+        username: &str,
+        server: &str,
+        sort: &str,
+    ) -> anyhow::Result<String> {
+        let list_backup_request = ListBackupsRequest {
+            server: server.to_string(),
+            sort: sort.to_string(),
+        };
+        Self::forward_request(username, Command::LIST_BACKUP, list_backup_request).await
     }
 }

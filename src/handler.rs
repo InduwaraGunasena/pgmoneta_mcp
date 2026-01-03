@@ -58,7 +58,19 @@ impl PgmonetaHandler {
         &self,
         Parameters(args): Parameters<info::InfoRequest>,
     ) -> Result<CallToolResult, McpError> {
-        self._get_backup_info(args).await
+        let result = self._get_backup_info(args).await?;
+        Self::_generate_call_tool_result(&result)
+    }
+
+    #[tool(description = "List backups of a server. \
+        Specify asc or desc to determine the sorting order.\
+        The backups are sorted in ascending order if not specified.")]
+    async fn list_backups(
+        &self,
+        Parameters(args): Parameters<info::ListBackupsRequest>,
+    ) -> Result<CallToolResult, McpError> {
+        let result = self._list_backups(args).await?;
+        Self::_generate_call_tool_result(&result)
     }
 }
 
@@ -134,14 +146,22 @@ impl PgmonetaHandler {
                 let error_msg = ManagementError::translate_error_enum(error as u32);
                 trans_res.insert(key.clone(), Value::from(error_msg));
             } else if object_arr_fields.contains(&key.as_str()) {
-                let arr = value.as_array().unwrap();
                 let mut trans_arr: Vec<Value> = Vec::new();
+                if value.as_array().is_none() {
+                    trans_res.insert(key.clone(), Value::from(trans_arr));
+                    return Ok(trans_res);
+                }
+                let arr = value.as_array().unwrap();
                 for item in arr {
                     if let Value::Object(object) = item {
                         let trans_obj = Self::_translate_result(object)?;
                         trans_arr.push(Value::Object(trans_obj));
+                    } else {
+                        trans_arr.push(item.clone())
                     }
                 }
+                trans_res.insert(key.clone(), Value::from(trans_arr));
+                return Ok(trans_res);
             } else if value.is_object() {
                 let object = value.as_object().unwrap();
                 let trans_obj = Self::_translate_result(object)?;
@@ -151,6 +171,20 @@ impl PgmonetaHandler {
             }
         }
         Ok(trans_res)
+    }
+
+    fn _generate_call_tool_result(result: &str) -> Result<CallToolResult, McpError> {
+        let res = Self::_parse_and_check_result(result)?;
+        let trans_res = Self::_translate_result(&res).map_err(|e| {
+            McpError::internal_error(
+                format!("Failed to translate some of the result fields: {:?}", e),
+                None,
+            )
+        })?;
+        let trans_res_str = serde_json::to_string(&trans_res).map_err(|e| {
+            McpError::internal_error(format!("Failed to serialize result: {:?}", e), None)
+        })?;
+        Ok(CallToolResult::success(vec![Content::text(trans_res_str)]))
     }
 }
 

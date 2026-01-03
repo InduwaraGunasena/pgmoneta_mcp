@@ -113,4 +113,17 @@ impl PgmonetaClient {
         let response_str = String::from_utf8(Vec::from(&response[..n]))?;
         Ok(response_str)
     }
+
+    async fn forward_request<R>(username: &str, command: u32, request: R) -> anyhow::Result<String>
+    where
+        R: Serialize + Clone,
+    {
+        let mut stream = Self::connect_to_server(username).await?;
+        let header = Self::build_request_header(command);
+        let request = PgmonetaRequest { request, header };
+
+        let request_str = serde_json::to_string(&request)?;
+        Self::write_request(&request_str, &mut stream).await?;
+        Self::read_response(&mut stream).await
+    }
 }

@@ -27,6 +27,7 @@ pub struct Format;
 pub struct Compression;
 pub struct Encryption;
 pub struct ManagementError;
+pub struct Sort;
 
 impl Command {
     pub const LIST_BACKUP: u32 = 2;
@@ -473,4 +474,9 @@ impl ManagementError {
             _ => "Unknown error",
         }
     }
+}
+
+impl Sort {
+    pub const ASC: &str = "asc";
+    pub const DESC: &str = "desc";
 }
