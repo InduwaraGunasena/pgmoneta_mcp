@@ -17,6 +17,7 @@ use super::constant::{LogLevel, LogType};
 use crate::constant::LogMode;
 use anyhow::Context;
 use std::fs::OpenOptions;
+#[cfg(unix)]
 use syslog_tracing::Syslog;
 use tracing::level_filters::LevelFilter;
 use tracing_appender::non_blocking::WorkerGuard;
@@ -29,9 +30,30 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{Layer, Registry};
 
+/// The global logger for the application.
+///
+/// Handles initialization of logging to console, files, or syslog
+/// using the `tracing` ecosystem.
 pub struct Logger;
 
 impl Logger {
+    /// Initializes the logging system.
+    ///
+    /// This sets up the global subscriber for `tracing` events.
+    ///
+    /// # Arguments
+    ///
+    /// * `log_level` - The severity level (e.g., "info", "debug").
+    /// * `log_type` - The output type ("console", "file", or "syslog").
+    /// * `log_format` - The timestamp format for log messages.
+    /// * `log_path` - The file path (required if `log_type` is "file").
+    /// * `log_mode` - "create" (overwrite) or "append".
+    /// * `log_rotation_age` - Rotation policy (e.g., "1h", "1d").
+    ///
+    /// # Returns
+    ///
+    /// Returns an optional `WorkerGuard`. This guard must be kept in scope
+    /// by the `main` function to ensure logs are flushed before shutdown.
     pub fn init(
         log_level: &str,
         log_type: &str,
@@ -106,6 +128,7 @@ impl Logger {
                 }
                 _ => Err(anyhow::anyhow!("Invalid log mode: {}", log_mode)),
             },
+            #[cfg(unix)]
             LogType::SYSLOG => {
                 let identity = c"pgmoneta-mcp";
                 let (options, facility) = Default::default();
