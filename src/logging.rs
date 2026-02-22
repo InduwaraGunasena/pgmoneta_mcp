@@ -17,8 +17,13 @@ use super::constant::{LogLevel, LogType};
 use crate::constant::LogMode;
 use anyhow::Context;
 use std::fs::OpenOptions;
+
 #[cfg(unix)]
 use syslog_tracing::Syslog;
+
+#[cfg(windows)]
+use winlog2;
+
 use tracing::level_filters::LevelFilter;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling::RollingFileAppender;
@@ -62,6 +67,16 @@ impl Logger {
         log_mode: &str,
         log_rotation_age: &str,
     ) -> Option<WorkerGuard> {
+        #[cfg(windows)]
+        if log_type == LogType::SYSLOG {
+            if let Err(e) = winlog2::register("pgmoneta-mcp") {
+                eprintln!("Failed to register Windows Event Log source: {}", e);
+            }
+            if let Err(e) = winlog2::init("pgmoneta-mcp") {
+                eprintln!("Failed to initialize Windows Event Logger: {}", e);
+            }
+        }
+
         let (writer, guard) = Self::make_writer(log_type, log_path, log_mode, log_rotation_age)
             .unwrap_or_else(|e| {
                 eprintln!(
@@ -135,6 +150,8 @@ impl Logger {
                 let syslog = Syslog::new(identity, options, facility).unwrap();
                 Ok((BoxMakeWriter::new(syslog), None))
             }
+            #[cfg(windows)]
+            LogType::SYSLOG => Ok((BoxMakeWriter::new(std::io::sink), None)),
             _ => Err(anyhow::anyhow!("Invalid log type: {}", log_type)),
         }
     }
